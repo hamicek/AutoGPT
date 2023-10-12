@@ -49,6 +49,47 @@ async def write_file(agent, task_id: str, file_path: str, data: bytes) -> None:
     if isinstance(data, str):
         data = data.encode()
 
+    with open(file_path, 'wb') as f:
+        f.write(data)
+
+    agent.workspace.write(task_id=task_id, path=file_path, data=data)
+    await agent.db.create_artifact(
+        task_id=task_id,
+        file_name=file_path.split("/")[-1],
+        relative_path=file_path,
+        agent_created=True,
+    )
+
+
+@ability(
+    name="append_to_file",
+    description="Append data to a file",
+    parameters=[
+        {
+            "name": "file_path",
+            "description": "Path to the file",
+            "type": "string",
+            "required": True,
+        },
+        {
+            "name": "data",
+            "description": "Data to append to the file",
+            "type": "bytes",
+            "required": True,
+        },
+    ],
+    output_type="None",
+)
+async def append_to_file(agent, task_id: str, file_path: str, data: bytes) -> None:
+    """
+    Append data to a file
+    """
+    if isinstance(data, str):
+        data = data.encode()
+
+    with open(file_path, 'ab') as f:
+        f.write(data)
+
     agent.workspace.write(task_id=task_id, path=file_path, data=data)
     await agent.db.create_artifact(
         task_id=task_id,
@@ -75,4 +116,7 @@ async def read_file(agent, task_id: str, file_path: str) -> bytes:
     """
     Read data from a file
     """
-    return agent.workspace.read(task_id=task_id, path=file_path)
+    with open(file_path, 'rb') as f:
+        data = f.readlines()
+    #return agent.workspace.read(task_id=task_id, path=file_path)
+    return data
